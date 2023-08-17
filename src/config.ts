@@ -1,5 +1,7 @@
 import type { FromSchema } from "json-schema-to-ts";
 
+const formats = ["env", "json", "toml", "yaml"] as const;
+
 const configEnvironmentSchema = {
 	type: "object",
 	properties: {
@@ -20,7 +22,7 @@ const configStackSchema = {
 	required: ["file", "format", "overwrite"],
 } as const;
 
-export const configSchema = {
+const configSchema = {
 	type: "object",
 	properties: {
 		exports: {
@@ -39,3 +41,5 @@ export type ExportsEnvironmentConfig = FromSchema<
 	typeof configEnvironmentSchema
 >;
 export type ExportsOutputsConfig = FromSchema<typeof configStackSchema>;
+
+export { configSchema };

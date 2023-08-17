@@ -1,4 +1,5 @@
 import type { CloudFormation } from "aws-sdk";
+import chalk from "chalk";
 import fs from "fs";
 import Serverless from "serverless";
 import Plugin, { Logging } from "serverless/classes/Plugin";
@@ -40,8 +41,6 @@ class ServerlessOutputPlugin implements Plugin {
 		};
 
 		serverless.configSchemaHandler.defineCustomProperties(configSchema);
-
-		console.log(serverless);
 	}
 
 	init() {
@@ -56,12 +55,12 @@ class ServerlessOutputPlugin implements Plugin {
 			return;
 		}
 
-		this.logging.log.notice("Exporting enviroment...");
+		this.logging.log.notice("\nExporting enviroment...");
 
 		const exports = await this.getEnvironmentVariables();
-		this.logging.log.notice("Enviroment: ", exports);
+		this.print(exports);
 
-		this.writeFile(exports, this.config.exports.environment);
+		this.write(exports, this.config.exports.environment);
 		this.logging.log.success(
 			`Exported enviroment to ${this.config.exports.environment.file} file`,
 		);
@@ -75,12 +74,12 @@ class ServerlessOutputPlugin implements Plugin {
 			return;
 		}
 
-		this.logging.log.notice("Exporting stack...");
+		this.logging.log.notice("\nExporting stack...");
 
 		const exports = await this.getStackOutputs();
-		this.logging.log.notice("Outputs: ", exports);
+		this.print(exports);
 
-		this.writeFile(exports, this.config.exports.stack);
+		this.write(exports, this.config.exports.stack);
 		this.logging.log.success(
 			`Exported outputs to ${this.config.exports.stack.file} file`,
 		);
@@ -90,9 +89,9 @@ class ServerlessOutputPlugin implements Plugin {
 		const providerVariables =
 			"environment" in this.serverless.service.provider
 				? (this.serverless.service.provider.environment as Record<
-					string,
-					string
-				>)
+						string,
+						string
+				  >)
 				: {};
 
 		// TODO collect variables from functions
@@ -149,7 +148,7 @@ class ServerlessOutputPlugin implements Plugin {
 		}
 	}
 
-	writeFile(
+	write(
 		exports: Exports,
 		config: ExportsEnvironmentConfig | ExportsOutputsConfig,
 	) {
@@ -161,8 +160,15 @@ class ServerlessOutputPlugin implements Plugin {
 		const { format, file } = config;
 		const content = this.format(exports, format);
 
-		this.logging.log.notice(`Writing exports to ${file}...`);
 		fs.writeFileSync(file, content);
+	}
+
+	print(exports: Exports) {
+		this.logging.log.notice(
+			Object.entries(exports)
+				.map(([key, value]) => chalk.gray(`  ${key}: ${value}`))
+				.join("\n"),
+		);
 	}
 }
 
