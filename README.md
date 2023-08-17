@@ -1,1 +1,1 @@
-# serverless-output-plugin
+# Serverless Exports Plugin

@@ -1,146 +1,170 @@
+import type { CloudFormation } from "aws-sdk";
+import fs from "fs";
 import Serverless from "serverless";
-import Plugin from "serverless/classes/Plugin";
+import Plugin, { Logging } from "serverless/classes/Plugin";
+import {
+	ExportsConfig,
+	ExportsEnvironmentConfig,
+	ExportsOutputsConfig,
+	configSchema,
+} from "./config";
+
+type Exports = Record<string, string>;
 
 // https://www.serverless.com/framework/docs/guides/plugins/creating-plugins
-export class ServerlessOutputPlugin implements Plugin {
+class ServerlessOutputPlugin implements Plugin {
 	serverless: Serverless;
-	options: Serverless.Options;
+
+	cliOptions: Serverless.Options;
+	// https://gist.github.com/HyperBrain/50d38027a8f57778d5b0f135d80ea406
 	hooks: Plugin.Hooks;
-	commands?: Plugin.Commands;
-	variableResolvers?: Plugin.VariableResolvers;
-	configurationVariablesSources?: Plugin.ConfigurationVariablesSources;
-	serviceName: string;
-	region: string;
-	stage: string;
-	stackName: string;
+	// https://www.serverless.com/framework/docs/guides/plugins/cli-output
+	logging: Logging;
 
-	constructor(serverless: Serverless, options: Serverless.Options) {
+	config: ExportsConfig;
+
+	constructor(
+		serverless: Serverless,
+		cliOptions: Serverless.Options,
+		logging: Logging,
+	) {
 		this.serverless = serverless;
-		this.options = options || {};
-		this.serviceName = serverless.service.getServiceName();
-		this.region = serverless.getProvider("aws").getRegion();
-		this.stage = serverless.getProvider("aws").getStage();
-
-		if (this.stage.startsWith("$")) this.stage = "dev";
-		this.stackName = `${this.serviceName}-${this.stage}`;
-		// this.config = serverless.service.custom.exportOutputs;
-		// this.log = data => serverless.cli.consoleLog(data);
+		this.cliOptions = cliOptions || {};
+		this.logging = logging;
+		this.config = { exports: {} };
 
 		this.hooks = {
-			"after:deploy:deploy": async () => this.afterDeploy(),
+			initialize: () => this.init(),
+			"package:finalize": async () => this.exportEnvironment(),
+			"deploy:finalize": async () => this.exportStack(),
+		};
+
+		serverless.configSchemaHandler.defineCustomProperties(configSchema);
+
+		console.log(serverless);
+	}
+
+	init() {
+		this.config = this.serverless.service.custom as ExportsConfig;
+	}
+
+	async exportEnvironment() {
+		if (!this.config.exports.environment) {
+			this.logging.log.notice(
+				"Config for environment not found. Skipping export for environment variables.",
+			);
+			return;
+		}
+
+		this.logging.log.notice("Exporting enviroment...");
+
+		const exports = await this.getEnvironmentVariables();
+		this.logging.log.notice("Enviroment: ", exports);
+
+		this.writeFile(exports, this.config.exports.environment);
+		this.logging.log.success(
+			`Exported enviroment to ${this.config.exports.environment.file} file`,
+		);
+	}
+
+	async exportStack() {
+		if (!this.config.exports.stack) {
+			this.logging.log.notice(
+				"Config for stack not found. Skipping export for stack outputs.",
+			);
+			return;
+		}
+
+		this.logging.log.notice("Exporting stack...");
+
+		const exports = await this.getStackOutputs();
+		this.logging.log.notice("Outputs: ", exports);
+
+		this.writeFile(exports, this.config.exports.stack);
+		this.logging.log.success(
+			`Exported outputs to ${this.config.exports.stack.file} file`,
+		);
+	}
+
+	async getEnvironmentVariables(): Promise<Exports> {
+		const providerVariables =
+			"environment" in this.serverless.service.provider
+				? (this.serverless.service.provider.environment as Record<
+					string,
+					string
+				>)
+				: {};
+
+		// TODO collect variables from functions
+		const functionVariables = {};
+
+		return {
+			...providerVariables,
+			...functionVariables,
 		};
 	}
 
-	async afterDeploy() {
-		const outputs = this.getStackOutputs();
-
-		// TODO get envs
-		// TODO create file
-
-			.then((stackOutputs) => this.collectOutputs(stackOutputs))
-			.then((targetOutputs) => this.processOutputs(targetOutputs))
-			.then((exportOutputs) => this.createFile(exportOutputs))
-			.catch((error) => {
-				this.log(error);
-			});
-	}
-
-	async getStackOutputs() {
-		const response = await this.serverless
-			.getProvider("aws")
-			.request("CloudFormation", "describeStacks", {
-				StackName: this.stackName,
+	async getStackOutputs(): Promise<Exports> {
+		const aws = this.serverless.getProvider("aws");
+		const stackName = aws.naming.getStackName();
+		const response: CloudFormation.Types.DescribeStacksOutput =
+			await aws.request("CloudFormation", "describeStacks", {
+				StackName: stackName,
 			});
 
-		const stack = response.Stacks[0];
+		if (!response.Stacks) throw new Error(`Stack ${stackName} not found`);
+
+		const [stack] = response.Stacks;
 		const outputs = stack.Outputs || [];
 
-		return outputs.reduce(
-			(acc, { OutputKey, OutputValue }) => ({
-				...acc,
-				[OutputKey]: OutputValue,
-			}),
+		return outputs.reduce<Record<string, string>>(
+			(acc, { OutputKey, OutputValue }) => {
+				if (!OutputKey) return acc;
+
+				acc[OutputKey] = OutputValue || "";
+				return acc;
+			},
 			{},
 		);
 	}
 
-	collectOutputs(outputs) {
-		if (!this.config) return outputs;
-
-		const isArray = (obj) =>
-			Object.prototype.toString.call(obj) === "[object Array]";
-		const isObject = (obj) =>
-			Object.prototype.toString.call(obj) === "[object Object]";
-
-		const targetOutputKeys = isArray(this.config)
-			? this.config
-			: this.config.include || [];
-		const targetOutputs = {};
-
-		targetOutputKeys.forEach((entry) => {
-			let key = entry;
-			let obj = outputs;
-			if (isObject(entry)) {
-				key = Object.keys(entry)[0];
-				obj = entry;
-			}
-			targetOutputs[key] = obj[key];
-		});
-
-		return targetOutputs;
-	}
-
-	processOutputs(outputs) {
-		if (this.config && this.config.handler) {
-			const handlerPath = path.resolve(
-				__dirname,
-				`../../${this.config.handler}`,
-			);
-			const handler = require(handlerPath);
-			return handler(outputs, this.serverless, this.options);
-		} else if (this.config && this.config.reactapp === true) {
-			return reactAppHandler(outputs);
-		} else {
-			return outputs;
-		}
-	}
-
-	createFile(outputs) {
-		const path =
-			this.config && this.config.output && this.config.output.file
-				? this.config.output.file
-				: defaultFile;
-		const targetFormat =
-			this.config && this.config.output && this.config.output.format
-				? this.config.output.format
-				: defaultFormat;
-		let formattedOutputs = null;
-
-		switch (targetFormat.toLowerCase()) {
+	format(exports: Exports, format: string) {
+		switch (format.toLowerCase()) {
 			case "toml":
-				formattedOutputs = tomlify.toToml(outputs);
-				break;
+				throw new Error("Not implemented yet");
+
 			case "yaml":
-			case "yml":
-				formattedOutputs = yamljs.stringify(outputs);
-				break;
+				throw new Error("Not implemented yet");
+
 			case "json":
-				formattedOutputs = JSON.stringify(outputs);
-				break;
+				throw new Error("Not implemented yet");
+
+			case "env":
+				return Object.entries(exports)
+					.map(([key, value]) => `${key}=${value}`)
+					.join("\n");
+
 			default:
-				throw new Error(`${targetFormat} is not supported`);
+				throw new Error(`Format ${format} is not supported`);
 		}
-
-		try {
-			fs.writeFileSync(path, formattedOutputs);
-		} catch (e) {
-			throw new Error(`Failed to create file: ${path}`);
-		}
-
-		return Promise.resolve();
 	}
 
-	export() {
+	writeFile(
+		exports: Exports,
+		config: ExportsEnvironmentConfig | ExportsOutputsConfig,
+	) {
+		if (fs.existsSync(config.file) && !config.overwrite)
+			throw new Error(
+				`File ${config.file} already exists and overwrite is disabled`,
+			);
 
+		const { format, file } = config;
+		const content = this.format(exports, format);
+
+		this.logging.log.notice(`Writing exports to ${file}...`);
+		fs.writeFileSync(file, content);
 	}
 }
+
+// use default export syntax because Serverless expects that
+module.exports = ServerlessOutputPlugin;
