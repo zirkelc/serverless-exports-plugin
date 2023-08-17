@@ -1,33 +1,39 @@
 service: serverless-exports-plugin-example
 frameworkVersion: '3'
 
-package:
-  individually: true
-  patterns:
-    - '!node_modules/**'
-    - index.js
+# package:
+#   individually: true
+#   patterns:
+#     - '!node_modules/**'
+#     - index.js
 
 plugins:
-  - ./../dist/index.js
+  - serverless-localstack
+  - ./dist/index.js
 
 custom:
+  localstack:
+    stages:
+      - local
   exports:
     environment:
-      file: ./.env.${sls:stage}
+      file: .serverless/env
       format: env
       overwrite: true    
     stack:
-      file: ./.stack.${sls:stage}
+      file: .serverless/stack
       format: env
       overwrite: true    
+
 provider:
   name: aws
   runtime: nodejs18.x
+  stage: local
   environment:
     FOO: bar
     SERVICE: ${self:service}
     STAGE: ${sls:stage}
 
-functions:
-  function1:
-    handler: index.handler
+# functions:
+#   function1:
+#     handler: index.handler

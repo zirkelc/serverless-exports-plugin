@@ -61,7 +61,9 @@ class ServerlessOutputPlugin implements Plugin {
 
 		this.write(exports, this.config.exports.environment);
 		this.logging.log.success(
-			`Exported environment variables to ${this.prettifyFile(this.config.exports.environment.file)}`,
+			`Exported environment variables to ${this.prettifyFile(
+				this.config.exports.environment.file,
+			)}`,
 		);
 		this.logging.log.notice(this.prettifyExports(exports));
 	}
@@ -80,7 +82,9 @@ class ServerlessOutputPlugin implements Plugin {
 		this.write(exports, this.config.exports.stack);
 
 		this.logging.log.success(
-			`Exported stack outputs to ${this.prettifyFile(this.config.exports.stack.file)}`,
+			`Exported stack outputs to ${this.prettifyFile(
+				this.config.exports.stack.file,
+			)}`,
 		);
 		this.logging.log.notice(this.prettifyExports(exports));
 	}
@@ -89,9 +93,9 @@ class ServerlessOutputPlugin implements Plugin {
 		const providerVariables =
 			"environment" in this.serverless.service.provider
 				? (this.serverless.service.provider.environment as Record<
-					string,
-					string
-				>)
+						string,
+						string
+				  >)
 				: {};
 
 		// TODO collect variables from functions
@@ -170,11 +174,9 @@ class ServerlessOutputPlugin implements Plugin {
 	}
 
 	prettifyFile(file: string) {
-		return chalk.gray(
-			path.relative(process.cwd(), file),
-		);
+		return chalk.gray(path.relative(process.cwd(), file));
 	}
 }
 
 // use default export syntax because Serverless expects that
-module.exports = ServerlessOutputPlugin;
+export = ServerlessOutputPlugin;

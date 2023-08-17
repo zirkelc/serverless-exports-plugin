@@ -1,0 +1,37 @@
+name: CI
+
+on: push
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup and Install
+        id: install
+        uses: ./.github/actions/setup-and-install
+        with:
+          node-version: 16
+
+      # https://docs.localstack.cloud/user-guide/ci/github-actions/
+      - name: Start LocalStack
+        run: |
+          pip install localstack awscli-local[ver1] # install LocalStack cli and awslocal
+          docker pull localstack/localstack         # Make sure to pull the latest version of the image
+          localstack start -d                       # Start LocalStack in the background
+          
+          echo "Waiting for LocalStack startup..."  # Wait 30 seconds for the LocalStack container
+          localstack wait -t 30                     # to become ready before timing out 
+          echo "Startup complete"  
+
+      - name: Build
+        run: |
+          pnpm build
+
+      - name: Test
+        run: |
+          pnpm test    
