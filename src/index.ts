@@ -1,6 +1,7 @@
 import type { CloudFormation } from "aws-sdk";
 import chalk from "chalk";
 import fs from "fs";
+import path from "path";
 import Serverless from "serverless";
 import Plugin, { Logging } from "serverless/classes/Plugin";
 import {
@@ -55,15 +56,14 @@ class ServerlessOutputPlugin implements Plugin {
 			return;
 		}
 
-		this.logging.log.notice("\nExporting enviroment...");
-
+		this.logging.log.verbose("\nExporting enviroment...");
 		const exports = await this.getEnvironmentVariables();
-		this.print(exports);
 
 		this.write(exports, this.config.exports.environment);
 		this.logging.log.success(
-			`Exported enviroment to ${this.config.exports.environment.file} file`,
+			`Exported environment variables to ${this.prettifyFile(this.config.exports.environment.file)}`,
 		);
+		this.logging.log.notice(this.prettifyExports(exports));
 	}
 
 	async exportStack() {
@@ -74,24 +74,24 @@ class ServerlessOutputPlugin implements Plugin {
 			return;
 		}
 
-		this.logging.log.notice("\nExporting stack...");
+		this.logging.log.verbose("\nExporting stack...");
 
 		const exports = await this.getStackOutputs();
-		this.print(exports);
-
 		this.write(exports, this.config.exports.stack);
+
 		this.logging.log.success(
-			`Exported outputs to ${this.config.exports.stack.file} file`,
+			`Exported stack outputs to ${this.prettifyFile(this.config.exports.stack.file)}`,
 		);
+		this.logging.log.notice(this.prettifyExports(exports));
 	}
 
 	async getEnvironmentVariables(): Promise<Exports> {
 		const providerVariables =
 			"environment" in this.serverless.service.provider
 				? (this.serverless.service.provider.environment as Record<
-						string,
-						string
-				  >)
+					string,
+					string
+				>)
 				: {};
 
 		// TODO collect variables from functions
@@ -163,11 +163,15 @@ class ServerlessOutputPlugin implements Plugin {
 		fs.writeFileSync(file, content);
 	}
 
-	print(exports: Exports) {
-		this.logging.log.notice(
-			Object.entries(exports)
-				.map(([key, value]) => chalk.gray(`  ${key}: ${value}`))
-				.join("\n"),
+	prettifyExports(exports: Exports) {
+		return Object.entries(exports)
+			.map(([key, value]) => chalk.gray(`  ${key}: ${value}`))
+			.join("\n");
+	}
+
+	prettifyFile(file: string) {
+		return chalk.gray(
+			path.relative(process.cwd(), file),
 		);
 	}
 }
