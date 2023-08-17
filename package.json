@@ -1,6 +1,6 @@
 {
   "name": "serverless-exports-plugin",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Serverless Framework plugin to export Environment variables and CloudFormation outputs to a file",
   "main": "dist/index.js",
   "files": [
