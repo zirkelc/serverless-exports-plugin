@@ -93,9 +93,9 @@ class ServerlessOutputPlugin implements Plugin {
 		const providerVariables =
 			"environment" in this.serverless.service.provider
 				? (this.serverless.service.provider.environment as Record<
-					string,
-					string
-				>)
+						string,
+						string
+				  >)
 				: {};
 
 		// TODO collect variables from functions

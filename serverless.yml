@@ -35,7 +35,7 @@ provider:
     SERVICE: ${self:service}
 
 functions:
-  function1:
+  hello:
     handler: index.handler
 
 resources:
