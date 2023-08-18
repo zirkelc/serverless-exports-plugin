@@ -1,11 +1,11 @@
-import { describe, test, expect } from "vitest";
-import { execSync } from "child_process";
+import { $ } from "execa";
 import fs from "fs";
 import path from "path";
-import { after, beforeEach } from "node:test";
-import { afterAll } from "vitest";
-import { $ } from "execa";
-import { beforeAll } from "vitest";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
+
+// TODO tests for:
+// other formats (json, yaml, toml)
+// invalid config
 
 const configFile = path.join(__dirname, "..", "serverless.yml");
 const serverlessDir = path.join(__dirname, "..", ".serverless");
@@ -28,13 +28,21 @@ afterAll(() => {
 	removeDir(serverlessDir);
 });
 
-describe("serverless deploy", () => {
-	test("should export environment and stack outputs", async () => {
-		const environmentFile = path.join(serverlessDir, "env");
-		const stackFile = path.join(serverlessDir, "stack");
+const exports = [
+	{
+		format: "env",
+		envFile: path.join(serverlessDir, ".env.dev"),
+		stackFile: path.join(serverlessDir, "stack-outputs.txt"),
+	}
+]
 
+describe("serverless deploy", () => {
+	test.each(exports)("should export $format file", async ({
+		envFile,
+		stackFile,
+	}) => {
 		// Remove files from previous tests
-		removeFiles(environmentFile, stackFile);
+		removeFiles(envFile, stackFile);
 
 		// Run the 'sls deploy' command
 		const result = await $`sls deploy --config ${configFile}`;
@@ -43,25 +51,30 @@ describe("serverless deploy", () => {
 		console.log(result.stdout, result.stderr, result.exitCode);
 
 		// Check that the output files were generated
-		expect(fs.existsSync(environmentFile)).toBe(true);
+		expect(fs.existsSync(envFile)).toBe(true);
 		expect(fs.existsSync(stackFile)).toBe(true);
+
+		expect(fs.readFileSync(envFile, "utf-8")).toMatchSnapshot();
+		expect(fs.readFileSync(stackFile, "utf-8")).toMatchSnapshot();
 	});
 });
 
 describe("serverless package", () => {
-	test("should export environment", async () => {
-		const environmentFile = path.join(serverlessDir, "env");
-		const stackFile = path.join(serverlessDir, "stack");
-
+	test.each(exports)("should export $format file", async ({
+		envFile,
+		stackFile,
+	}) => {
 		// Remove files from previous tests
-		removeFiles(environmentFile, stackFile);
+		removeFiles(envFile, stackFile);
 
 		// Run the 'sls deploy' command
 		const result = await $`sls package --config ${configFile}`;
 		expect(result.exitCode).toBe(0);
 
 		// Check that the output files were generated
-		expect(fs.existsSync(environmentFile)).toBe(true);
+		expect(fs.existsSync(envFile)).toBe(true);
 		expect(fs.existsSync(stackFile)).toBe(false);
+
+		expect(fs.readFileSync(envFile, "utf-8")).toMatchSnapshot();
 	});
 });

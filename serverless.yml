@@ -1,11 +1,10 @@
-service: serverless-exports-plugin-example
+service: acme-service
 frameworkVersion: '3'
-
-# package:
-#   individually: true
-#   patterns:
-#     - '!node_modules/**'
-#     - index.js
+package:
+  individually: true
+  patterns:
+    - '!node_modules/**'
+    - index.js
 
 plugins:
   - serverless-localstack
@@ -14,26 +13,39 @@ plugins:
 custom:
   localstack:
     stages:
-      - local
+      - dev  
   exports:
     environment:
-      file: .serverless/env
+      file: .serverless/.env.${sls:stage}
       format: env
       overwrite: true    
     stack:
-      file: .serverless/stack
+      file: .serverless/stack-outputs.txt
       format: env
       overwrite: true    
 
 provider:
   name: aws
   runtime: nodejs18.x
-  stage: local
+  stage: dev
   environment:
     FOO: bar
-    SERVICE: ${self:service}
     STAGE: ${sls:stage}
+    REGION: ${aws:region}
+    SERVICE: ${self:service}
 
-# functions:
-#   function1:
-#     handler: index.handler
+functions:
+  function1:
+    handler: index.handler
+
+resources:
+  Resources:
+    bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-${sls:stage}-bucket
+  Outputs:
+    Foo:
+      Value: bar
+    BucketName:
+      Value: !Ref bucket

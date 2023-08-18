@@ -9,6 +9,7 @@
     "README.md"
   ],
   "scripts": {
+    "start": "localstack start",
     "test": "vitest run",
     "build": "rm -rf /dist && tsc",
     "watch": "tsc -w",

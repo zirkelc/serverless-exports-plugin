@@ -65,7 +65,7 @@ class ServerlessOutputPlugin implements Plugin {
 				this.config.exports.environment.file,
 			)}`,
 		);
-		this.logging.log.notice(this.prettifyExports(exports));
+		this.logging.log.notice(this.prettifyExports(exports) + "\n");
 	}
 
 	async exportStack() {
@@ -93,9 +93,9 @@ class ServerlessOutputPlugin implements Plugin {
 		const providerVariables =
 			"environment" in this.serverless.service.provider
 				? (this.serverless.service.provider.environment as Record<
-						string,
-						string
-				  >)
+					string,
+					string
+				>)
 				: {};
 
 		// TODO collect variables from functions
@@ -164,6 +164,7 @@ class ServerlessOutputPlugin implements Plugin {
 		const { format, file } = config;
 		const content = this.format(exports, format);
 
+		//TODO create directory if it doesn't exist
 		fs.writeFileSync(file, content);
 	}
 
