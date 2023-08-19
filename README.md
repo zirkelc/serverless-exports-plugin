@@ -1,3 +1,7 @@
+[![CI](https://github.com/zirkelc/serverless-exports-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/zirkelc/serverless-exports-plugin/actions/workflows/ci.yml)
+![npm](https://img.shields.io/npm/v/serverless-exports-plugin)
+![npm](https://img.shields.io/npm/dt/serverless-exports-plugin)
+
 # Serverless Exports Plugin
 This plugin exports environment variables and stack outputs from your Serverless project to local files.
 These files can then be used in development or in CI/CD pipelines to set environment variables or use as input for other tools.
@@ -98,6 +102,7 @@ resources:
 - [ ] Support for different export formats (json, toml, yaml)
 - [ ] Support for a JavaScript handler function to process the exports
 - [ ] Collect function-level environment variables and merge with global environment variables
+- [ ] Support for include/exclude patterns for variables and outputs
 
 ## Contributing
 Contributions are welcome! Please open an issue or submit a pull request.
