@@ -37,7 +37,7 @@ custom:
 That's it! Now you can run `serverless deploy` or `serverless package` and the plugin will generate the exports for you.
 
 ## Configuration
-The plugin supports to type of exports: `environment` variables and `stack` outputs.
+The plugin supports two type of exports: `environment` variables and `stack` outputs.
 
 The configuration for each export is the following:
 ```yaml
