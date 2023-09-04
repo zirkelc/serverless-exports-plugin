@@ -37,6 +37,8 @@ class ServerlessOutputPlugin implements Plugin {
 
 		this.hooks = {
 			initialize: () => this.init(),
+			// https://www.serverless.com/framework/docs/providers/aws/cli-reference/info
+			"info:info": async () => this.exportEnvironment(),
 			"package:finalize": async () => this.exportEnvironment(),
 			"deploy:finalize": async () => this.exportStack(),
 		};

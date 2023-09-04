@@ -34,7 +34,7 @@ custom:
       overwrite: true
 ```
 
-That's it! Now you can run `serverless deploy` or `serverless package` and the plugin will generate the exports for you.
+That's it! Now you can run `serverless deploy` or `serverless package` or `serverless info` and the plugin will generate the exports for you.
 
 ## Configuration
 The plugin supports two type of exports: `environment` variables and `stack` outputs.
@@ -52,7 +52,7 @@ custom:
 Only exports that are configured will be generated. There are no default values, so if you want to generate an export you need to configure it.
 
 ## Example
-The plugin runs during `serverless deploy` and `serverless package` commands. However, the stack outputs are only available after the stack has been deployed. Therefore, the plugin will only generate the stack outputs during `serverless deploy`.
+The plugin runs during `serverless deploy`, `serverless package` and `serverless info` commands. However, the stack outputs are only available after the stack has been deployed. Therefore, the plugin will only generate the stack outputs during `serverless deploy`.
 
 ```yaml
 service: acme-service
@@ -96,6 +96,63 @@ resources:
       Value: bar
     BucketName:
       Value: !Ref bucket
+```
+
+#### Deploy
+```bash
+$ serverless deploy
+
+Deploying acme-service to stage dev (us-east-1)
+
+✔ Exported environment variables to .serverless/.env.dev
+  FOO: bar
+  STAGE: dev
+  REGION: us-east-1
+  SERVICE: acme-service
+
+✔ Exported stack outputs to .serverless/stack-outputs.txt
+  ServerlessDeploymentBucketName: acme-service-dev-serverlessdeploymentbuck-a242ab89
+  HelloLambdaFunctionQualifiedArn: arn:aws:lambda:us-east-1:000000000000:function:acme-service-dev-hello:1
+  Foo: bar
+  BucketName: acme-service-dev-bucket
+
+✔ Service deployed to stack acme-service-dev (12s)
+
+functions:
+  hello: acme-service-dev-hello (66 kB)
+```
+
+#### Package
+```bash
+$ serverless package
+
+Packaging acme-service for stage dev (us-east-1)
+
+✔ Exported environment variables to .serverless/.env.dev
+  FOO: bar
+  STAGE: dev
+  REGION: us-east-1
+  SERVICE: acme-service
+
+✔ Service packaged (1s)  
+```
+
+#### Info
+```bash
+$ serverless info
+
+✔ Exported environment variables to .serverless/.env.dev
+  FOO: bar
+  STAGE: dev
+  REGION: us-east-1
+  SERVICE: acme-service
+
+service: acme-service
+stage: dev
+region: us-east-1
+stack: acme-service-dev
+functions:
+  hello: acme-service-dev-hello
 ```
 
 ## Open Points

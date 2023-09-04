@@ -97,3 +97,25 @@ describe("serverless package", () => {
 		},
 	);
 });
+
+describe("serverless info", () => {
+	test.each(exports)(
+		"should export $format file",
+		async ({ envFile, stackFile, envSnapshot }) => {
+			// Remove files from previous tests
+			removeFiles(envFile, stackFile);
+
+			// Run the 'sls deploy' command
+			const result = await $`sls info --config ${configFile}`;
+			expect(result.exitCode).toBe(0);
+
+			// Check that the output files were generated
+			expect(fs.existsSync(envFile)).toBe(true);
+			expect(fs.existsSync(stackFile)).toBe(false);
+
+			const envContents = fs.readFileSync(envFile, "utf-8").split("\n");
+			expect(envContents).toMatchObject(envSnapshot);
+		},
+	);
+});
+
