@@ -133,7 +133,7 @@ class ServerlessOutputPlugin implements Plugin {
 		);
 	}
 
-	format(exports, format) {
+	format(exports: Exports, format: string) {
         switch (format.toLowerCase()) {
             case "toml":
                 throw new Error("Not implemented yet");
