@@ -138,9 +138,6 @@ class ServerlessOutputPlugin implements Plugin {
             case "toml":
                 throw new Error("Not implemented yet");
             case "yaml":
-                return Object.entries(exports)
-                    .map(([key, value]) => `${key}: ${value}`)
-                    .join("\n");
             case "yml":
                 return Object.entries(exports)
                     .map(([key, value]) => `${key}: ${value}`)
