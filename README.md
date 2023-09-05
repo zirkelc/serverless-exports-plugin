@@ -45,7 +45,7 @@ custom:
   exports:
     <environment | stack>:
       file: path/to/file
-      format: env # not implemented yet: json | yaml | toml
+      format: env | yaml # not implemented yet: json | toml
       overwrite: true | false
 ```
 
@@ -156,7 +156,7 @@ functions:
 ```
 
 ## Open Points
-- [ ] Support for different export formats (json, toml, yaml)
+- [ ] Support for different export formats (~~env~~, json, toml, ~~yaml~~)
 - [ ] Support for a JavaScript handler function to process the exports
 - [ ] Collect function-level environment variables and merge with global environment variables
 - [ ] Support for include/exclude patterns for variables and outputs
