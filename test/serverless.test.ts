@@ -1,13 +1,16 @@
+import cloudFormationSchema from '@serverless/utils/cloudformation-schema';
 import { $ } from "execa";
 import fs from "fs";
+import yaml from 'js-yaml';
 import path from "path";
-import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
+import type { ExportsConfig } from "../src/config";
 
 // TODO tests for:
 // other formats (json, yaml, toml)
 // invalid config
 
-const configFile = path.join(__dirname, "..", "serverless.yml");
+const baseConfigFile = path.join(__dirname, "..", "serverless.yml");
 const serverlessDir = path.join(__dirname, "..", ".serverless");
 
 const removeDir = (dir: string) => {
@@ -20,19 +23,19 @@ const removeFiles = (...files: string[]) => {
 	files.forEach((file) => fs.existsSync(file) && fs.rmSync(file));
 };
 
-beforeAll(() => {
-	removeDir(serverlessDir);
-});
+type Export = {
+	format: string;
+	envFile: string;
+	stackFile: string;
+	envSnapshot: string[];
+	stackSnapshot: string[];
+};
 
-afterAll(() => {
-	removeDir(serverlessDir);
-});
-
-const exports = [
+const exports: Array<Export> = [
 	{
 		format: "env",
-		envFile: path.join(serverlessDir, ".env.dev"),
-		stackFile: path.join(serverlessDir, "stack-outputs.txt"),
+		envFile: path.join(serverlessDir, "env-variables.env"),
+		stackFile: path.join(serverlessDir, "stack-outputs.env"),
 		envSnapshot: [
 			"FOO=bar",
 			"STAGE=dev",
@@ -50,72 +53,117 @@ const exports = [
 			"BucketName=acme-service-dev-bucket",
 		],
 	},
+	{
+		format: "yml",
+		envFile: path.join(serverlessDir, "env-variables.yml"),
+		stackFile: path.join(serverlessDir, "stack-outputs.yml"),
+		envSnapshot: [
+			"FOO: bar",
+			"STAGE: dev",
+			"REGION: us-east-1",
+			"SERVICE: acme-service",
+		],
+		stackSnapshot: [
+			expect.stringContaining(
+				"ServerlessDeploymentBucketName: acme-service-dev-serverlessdeploymentbuck",
+			),
+			expect.stringContaining(
+				"HelloLambdaFunctionQualifiedArn: arn:aws:lambda:us-east-1:000000000000:function:acme-service-dev-hello:",
+			),
+			"Foo: bar",
+			"BucketName: acme-service-dev-bucket",
+		],
+	},
 ];
 
-describe("serverless deploy", () => {
-	test.each(exports)(
-		"should export $format file",
-		async ({ envFile, stackFile, envSnapshot, stackSnapshot }) => {
-			// Remove files from previous tests
-			removeFiles(envFile, stackFile);
+type ServerlessConfig = {
+	custom: ExportsConfig;
+};
 
-			// Run the 'sls deploy' command
-			const result = await $`sls deploy --config ${configFile}`;
-			expect(result.exitCode).toBe(0);
+const readServerlessConfig = (configFile: string): ServerlessConfig => {
+	return yaml.load(fs.readFileSync(configFile, 'utf-8'), {
+		schema: cloudFormationSchema,
+	});
+};
 
-			console.log(result.stdout, result.stderr, result.exitCode);
+const writeServerlessConfig = (configFile: string, config: ServerlessConfig) => {
+	const content = yaml.dump(config, {
+		schema: cloudFormationSchema,
+	});
+	fs.writeFileSync(configFile, content, 'utf-8');
+};
 
-			// Check that the output files were generated
-			expect(fs.existsSync(envFile)).toBe(true);
-			expect(fs.existsSync(stackFile)).toBe(true);
+beforeAll(() => {
+	removeDir(serverlessDir);
 
-			const envContents = fs.readFileSync(envFile, "utf-8").split("\n");
-			const stackContents = fs.readFileSync(stackFile, "utf-8").split("\n");
-			expect(envContents).toMatchObject(envSnapshot);
-			expect(stackContents).toMatchObject(stackSnapshot);
-		},
-	);
+	return () => { removeDir(serverlessDir); }
 });
 
-describe("serverless package", () => {
-	test.each(exports)(
-		"should export $format file",
-		async ({ envFile, stackFile, envSnapshot }) => {
-			// Remove files from previous tests
-			removeFiles(envFile, stackFile);
+describe.each(exports)("format: $format", ({ format, envFile, stackFile, envSnapshot, stackSnapshot }) => {
+	let configFile: string;
 
-			// Run the 'sls deploy' command
-			const result = await $`sls package --config ${configFile}`;
-			expect(result.exitCode).toBe(0);
+	beforeAll(() => {
+		// create temporary serverless config file inside the root directory
+		const config = readServerlessConfig(baseConfigFile);
+		config.custom.exports = {
+			environment: {
+				format,
+				file: envFile,
+				overwrite: true,
+			},
+			stack: {
+				format,
+				file: stackFile,
+				overwrite: true,
+			},
+		};
+		configFile = path.join(__dirname, "..", `serverless.${format}.yml`);
+		writeServerlessConfig(configFile, config);
 
-			// Check that the output files were generated
-			expect(fs.existsSync(envFile)).toBe(true);
-			expect(fs.existsSync(stackFile)).toBe(false);
+		return () => { removeFiles(configFile); }
+	});
 
-			const envContents = fs.readFileSync(envFile, "utf-8").split("\n");
-			expect(envContents).toMatchObject(envSnapshot);
-		},
-	);
-});
+	beforeEach(() => {
+		removeFiles(envFile, stackFile);
 
-describe("serverless info", () => {
-	test.each(exports)(
-		"should export $format file",
-		async ({ envFile, stackFile, envSnapshot }) => {
-			// Remove files from previous tests
-			removeFiles(envFile, stackFile);
+		return () => { removeFiles(envFile, stackFile); }
+	});
 
-			// Run the 'sls deploy' command
-			const result = await $`sls info --config ${configFile}`;
-			expect(result.exitCode).toBe(0);
+	test("serverless deploy", async () => {
+		const result = await $`sls deploy --config ${configFile}`;
+		expect(result.exitCode).toBe(0);
 
-			// Check that the output files were generated
-			expect(fs.existsSync(envFile)).toBe(true);
-			expect(fs.existsSync(stackFile)).toBe(false);
+		console.log(result.stdout, result.stderr, result.exitCode);
 
-			const envContents = fs.readFileSync(envFile, "utf-8").split("\n");
-			expect(envContents).toMatchObject(envSnapshot);
-		},
-	);
+		expect(fs.existsSync(envFile)).toBe(true);
+		expect(fs.existsSync(stackFile)).toBe(true);
+
+		const envContents = fs.readFileSync(envFile, "utf-8").split("\n");
+		expect(envContents).toMatchObject(envSnapshot);
+		const stackContents = fs.readFileSync(stackFile, "utf-8").split("\n");
+		expect(stackContents).toMatchObject(stackSnapshot);
+	});
+
+	test("serverless package", async () => {
+		const result = await $`sls package --config ${configFile}`;
+		expect(result.exitCode).toBe(0);
+
+		expect(fs.existsSync(envFile)).toBe(true);
+		expect(fs.existsSync(stackFile)).toBe(false);
+
+		const envContents = fs.readFileSync(envFile, "utf-8").split("\n");
+		expect(envContents).toMatchObject(envSnapshot);
+	});
+
+	test("serverless info", async () => {
+		const result = await $`sls info --config ${configFile}`;
+		expect(result.exitCode).toBe(0);
+
+		expect(fs.existsSync(envFile)).toBe(true);
+		expect(fs.existsSync(stackFile)).toBe(false);
+
+		const envContents = fs.readFileSync(envFile, "utf-8").split("\n");
+		expect(envContents).toMatchObject(envSnapshot);
+	});
 });
 

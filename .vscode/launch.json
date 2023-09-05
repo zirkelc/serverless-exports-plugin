@@ -1,0 +1,13 @@
+{
+  // https://code.visualstudio.com/docs/editor/debugging
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node-terminal",
+      "name": "Vitest Test",
+      "request": "launch",
+      "command": "pnpm vitest ${fileBasenameNoExtension}",
+      "cwd": "${fileDirname}"
+    },
+  ]
+}
