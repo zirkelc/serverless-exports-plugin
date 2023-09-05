@@ -134,25 +134,24 @@ class ServerlessOutputPlugin implements Plugin {
 	}
 
 	format(exports: Exports, format: string) {
-		switch (format.toLowerCase()) {
-			case "toml":
-				throw new Error("Not implemented yet");
-
-			case "yaml":
-				throw new Error("Not implemented yet");
-
-			case "json":
-				throw new Error("Not implemented yet");
-
-			case "env":
-				return Object.entries(exports)
-					.map(([key, value]) => `${key}=${value}`)
-					.join("\n");
-
-			default:
-				throw new Error(`Format ${format} is not supported`);
-		}
-	}
+        switch (format.toLowerCase()) {
+            case "toml":
+                throw new Error("Not implemented yet");
+            case "yaml":
+            case "yml":
+                return Object.entries(exports)
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join("\n");
+            case "json":
+                throw new Error("Not implemented yet");
+            case "env":
+                return Object.entries(exports)
+                    .map(([key, value]) => `${key}=${value}`)
+                    .join("\n");
+            default:
+                throw new Error(`Format ${format} is not supported`);
+        }
+    }
 
 	write(
 		exports: Exports,
