@@ -160,6 +160,8 @@ functions:
 - [ ] Support for a JavaScript handler function to process the exports
 - [ ] Collect function-level environment variables and merge with global environment variables
 - [ ] Support for include/exclude patterns for variables and outputs
+- [ ] Export stack outputs when running `serverless package` and `serverless info`, if the stack has already been deployed
+- [ ] Serverless command `severless exports` to generate the exports without deploying the stack
 
 ## Contributing
 Contributions are welcome! Please open an issue or submit a pull request.
