@@ -1,6 +1,6 @@
 [![CI](https://github.com/zirkelc/serverless-exports-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/zirkelc/serverless-exports-plugin/actions/workflows/ci.yml)
-![npm](https://img.shields.io/npm/v/serverless-exports-plugin)
-![npm](https://img.shields.io/npm/dt/serverless-exports-plugin)
+[![npm](https://img.shields.io/npm/v/serverless-exports-plugin)](https://www.npmjs.com/package/serverless-exports-plugin)
+[![npm](https://img.shields.io/npm/dt/serverless-exports-plugin)](https://www.npmjs.com/package/serverless-exports-plugin)
 
 # Serverless Exports Plugin
 This plugin exports environment variables and stack outputs from your Serverless project to local files.
