@@ -8,6 +8,6 @@
       "request": "launch",
       "command": "pnpm vitest ${fileBasenameNoExtension}",
       "cwd": "${fileDirname}"
-    },
+    }
   ]
 }
