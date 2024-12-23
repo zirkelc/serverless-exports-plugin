@@ -8,6 +8,7 @@
   "scripts": {
     "start": "localstack start",
     "test": "vitest run",
+    "prepublishOnly": "pnpm build",
     "build": "rm -rf /dist && tsc",
     "watch": "tsc -w",
     "lint": "pnpm biome check --write --no-errors-on-unmatched ."
