@@ -3,7 +3,7 @@
   "version": "1.2.0",
   "description": "Serverless Framework plugin to export Environment variables and CloudFormation outputs to a file",
   "main": "dist/index.js",
-  "packageManager": "pnpm@8.6.10",
+  "packageManager": "pnpm@9.0.0",
   "files": ["dist", "README.md"],
   "scripts": {
     "start": "localstack start",
