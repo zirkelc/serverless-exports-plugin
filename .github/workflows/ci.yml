@@ -4,6 +4,13 @@ on:
   push:
   pull_request:
 
+permissions:
+  checks: write
+  id-token: write # needed for npm publish with provenance
+  contents: write # needed for github release
+  pull-requests: write # needed for coverage comment
+
+
 jobs:
   lint:
     name: Lint
