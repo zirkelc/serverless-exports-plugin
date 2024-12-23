@@ -10,8 +10,7 @@
     "test": "vitest run",
     "build": "rm -rf /dist && tsc",
     "watch": "tsc -w",
-    "lint:check": "biome check .",
-    "lint:fix": "biome check --fix ."
+    "lint": "pnpm biome check --write --no-errors-on-unmatched ."
   },
   "keywords": [
     "serverless",
@@ -47,6 +46,6 @@
     "vitest": "^0.34.1"
   },
   "peerDependencies": {
-    "serverless": "^3.0.0"
+    "serverless": "^3.0.0 || ^4.0.0"
   }
 }

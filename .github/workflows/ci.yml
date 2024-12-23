@@ -1,6 +1,6 @@
 name: CI
 
-on: 
+on:
   push:
     branches:
       - main
@@ -11,6 +11,20 @@ on:
       - main
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup and Install
+        id: install
+        uses: zirkelc/setup-and-install@v1
+
+      - name: Lint
+        run: pnpm lint
+
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -21,9 +35,9 @@ jobs:
 
       - name: Setup and Install
         id: install
-        uses: ./.github/actions/setup-and-install
+        uses: zirkelc/setup-and-install@v1
         with:
-          node-version: 16
+          node-version: 20
 
       # https://docs.localstack.cloud/user-guide/ci/github-actions/
       - name: Start LocalStack
@@ -31,10 +45,10 @@ jobs:
           pip install localstack awscli-local[ver1] # install LocalStack cli and awslocal
           docker pull localstack/localstack         # Make sure to pull the latest version of the image
           localstack start -d                       # Start LocalStack in the background
-          
+
           echo "Waiting for LocalStack startup..."  # Wait 30 seconds for the LocalStack container
-          localstack wait -t 30                     # to become ready before timing out 
-          echo "Startup complete"  
+          localstack wait -t 30                     # to become ready before timing out
+          echo "Startup complete"
 
       - name: Build
         run: |
@@ -42,4 +56,51 @@ jobs:
 
       - name: Test
         run: |
-          pnpm test    
+          pnpm test
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: [lint, test, test]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup and Install
+        id: install
+        uses: zirkelc/setup-and-install@v1
+
+      - name: Build
+        run: pnpm build
+
+      - name: Publish to NPM
+        id: publish
+        uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          dry-run: false
+          provenance: true
+
+      - name: Post publish
+        if: steps.publish.outputs.type != ''
+        run: |
+          echo "Published ${{ steps.publish.outputs.type }} version: ${{ steps.publish.outputs.version }}"
+
+      - name: Publish skipped
+        if: steps.publish.outputs.type == ''
+        run: |
+          echo "Version in package.json has not changed. Skipping."
+          exit 0
+
+      - name: Create Release
+        if: steps.publish.outputs.type != ''
+        id: release
+        uses: ncipollo/release-action@v1 # https://github.com/ncipollo/release-action
+        with:
+          allowUpdates: true
+          generateReleaseNotes: true
+          commit: ${{ github.sha }}
+          draft: false
+          name: v${{ steps.publish.outputs.version }}
+          tag: v${{ steps.publish.outputs.version }}
