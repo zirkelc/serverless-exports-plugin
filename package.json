@@ -5,6 +5,10 @@
   "main": "dist/index.js",
   "packageManager": "pnpm@9.0.0",
   "files": ["dist", "README.md"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zirkelc/serverless-exports-plugin.git"
+  },
   "scripts": {
     "start": "localstack start",
     "test": "vitest run",
