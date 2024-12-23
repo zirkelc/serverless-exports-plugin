@@ -2,13 +2,7 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - '**.ts'
   pull_request:
-    branches:
-      - main
 
 jobs:
   lint:
@@ -51,12 +45,10 @@ jobs:
           echo "Startup complete"
 
       - name: Build
-        run: |
-          pnpm build
+        run: pnpm build
 
       - name: Test
-        run: |
-          pnpm test
+        run: pnpm test
 
   release:
     name: Release
