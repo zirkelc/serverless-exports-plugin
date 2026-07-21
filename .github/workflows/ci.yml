@@ -74,7 +74,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: [lint, test, test]
+    needs: [lint, test]
     if: github.ref == 'refs/heads/main'
 
     steps:
@@ -87,11 +87,19 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # Trusted publishing needs npm >= 11.5.1. Older versions fall back to
+      # token auth silently, which surfaces as a confusing 404 on publish.
+      - name: Upgrade npm
+        run: |
+          npm install -g npm@latest
+          npm --version
+
+      # No token: authentication happens over OIDC using the id-token
+      # permission granted at the top of this workflow.
       - name: Publish to NPM
         id: publish
         uses: JS-DevTools/npm-publish@v3
         with:
-          token: ${{ secrets.NPM_TOKEN }}
           dry-run: false
           provenance: true
 
