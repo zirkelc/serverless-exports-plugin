@@ -1,6 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { CloudFormation } from 'aws-sdk';
+import {
+  CloudFormationClient,
+  type CloudFormationClientConfig,
+  DescribeStacksCommand,
+  type DescribeStacksCommandOutput,
+} from '@aws-sdk/client-cloudformation';
 import chalk from 'chalk';
 import type Serverless from 'serverless';
 import type Plugin from 'serverless/classes/Plugin';
@@ -13,6 +18,15 @@ import {
 } from './config';
 
 type Exports = Record<string, string>;
+
+/**
+ * The AWS provider as exposed by the different Serverless Framework forks.
+ * `getAwsSdkV3Config` only exists on forks that migrated to the AWS SDK v3
+ * and is therefore optional.
+ */
+type AwsProvider = ReturnType<Serverless['getProvider']> & {
+  getAwsSdkV3Config?: () => CloudFormationClientConfig;
+};
 
 // https://www.serverless.com/framework/docs/guides/plugins/creating-plugins
 class ServerlessOutputPlugin implements Plugin {
@@ -110,13 +124,34 @@ class ServerlessOutputPlugin implements Plugin {
     };
   }
 
+  async describeStacks(
+    stackName: string,
+  ): Promise<DescribeStacksCommandOutput> {
+    const aws = this.serverless.getProvider('aws') as AwsProvider;
+
+    /**
+     * Frameworks based on the AWS SDK v3 (e.g. oss-serverless v4) removed
+     * `provider.request()` and expose the resolved SDK configuration instead.
+     * Older frameworks (Serverless Framework v3 and v4) only offer
+     * `provider.request()`, so both code paths are kept and selected by
+     * feature detection. Both return the same `DescribeStacks` response shape.
+     */
+    if (typeof aws.getAwsSdkV3Config === 'function') {
+      const client = new CloudFormationClient(aws.getAwsSdkV3Config());
+      return await client.send(
+        new DescribeStacksCommand({ StackName: stackName }),
+      );
+    }
+
+    return await aws.request('CloudFormation', 'describeStacks', {
+      StackName: stackName,
+    });
+  }
+
   async getStackOutputs(): Promise<Exports> {
     const aws = this.serverless.getProvider('aws');
     const stackName = aws.naming.getStackName();
-    const response: CloudFormation.Types.DescribeStacksOutput =
-      await aws.request('CloudFormation', 'describeStacks', {
-        StackName: stackName,
-      });
+    const response = await this.describeStacks(stackName);
 
     if (!response.Stacks) throw new Error(`Stack ${stackName} not found`);
 

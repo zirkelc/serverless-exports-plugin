@@ -4,10 +4,7 @@
   "description": "Serverless Framework plugin to export Environment variables and CloudFormation outputs to a file",
   "main": "dist/index.js",
   "packageManager": "pnpm@9.0.0",
-  "files": [
-    "dist",
-    "README.md"
-  ],
+  "files": ["dist", "README.md"],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zirkelc/serverless-exports-plugin.git"
@@ -37,6 +34,7 @@
   "license": "ISC",
   "devDependencies": {
     "@aws-sdk/types": "^3.391.0",
+    "@biomejs/biome": "1.9.3",
     "@serverless/utils": "^6.13.1",
     "@types/aws-sdk": "^2.7.0",
     "@types/node": "^20.5.0",
@@ -46,16 +44,25 @@
     "js-yaml": "^4.1.0",
     "json-schema-to-ts": "^2.9.2",
     "lodash": "^4.17.21",
-    "@biomejs/biome": "1.9.3",
     "serverless": "^3.34.0",
     "serverless-localstack": "^1.1.1",
     "typescript": "^5.1.6",
     "vitest": "^0.34.1"
   },
   "dependencies": {
+    "@aws-sdk/client-cloudformation": "^3.1091.0",
     "chalk": "^4.0.0"
   },
   "peerDependencies": {
+    "osls": ">=4",
     "serverless": "^3.0.0 || ^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "osls": {
+      "optional": true
+    },
+    "serverless": {
+      "optional": true
+    }
   }
 }
