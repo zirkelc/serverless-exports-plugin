@@ -101,7 +101,7 @@ jobs:
       # permission granted at the top of this workflow.
       - name: Publish to NPM
         id: publish
-        uses: JS-DevTools/npm-publish@v3
+        uses: JS-DevTools/npm-publish@v4
         with:
           dry-run: false
           provenance: true
