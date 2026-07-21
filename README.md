@@ -6,6 +6,8 @@
 This plugin exports environment variables and stack outputs from your Serverless project to local files.
 These files can then be used in development or in CI/CD pipelines to set environment variables or use as input for other tools.
 
+It works with Serverless Framework v3 and v4 as well as [oss-serverless (osls)](https://github.com/oss-serverless/osls) v4, which is based on the AWS SDK v3.
+
 ![Terminal](https://github.com/zirkelc/serverless-exports-plugin/assets/950244/9e77e49a-fe43-4457-8d5b-4c1942141ee1)
 
 ## Usage
