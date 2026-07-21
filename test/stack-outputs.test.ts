@@ -45,11 +45,12 @@ const createPlugin = (provider: Record<string, unknown>) => {
     },
   };
 
-  // biome-ignore lint/suspicious/noExplicitAny: minimal test doubles
+  type PluginArgs = ConstructorParameters<typeof ServerlessExportsPlugin>;
+
   return new ServerlessExportsPlugin(
-    serverless as any,
-    {} as any,
-    logging as any,
+    serverless as unknown as PluginArgs[0],
+    {} as unknown as PluginArgs[1],
+    logging as unknown as PluginArgs[2],
   );
 };
 
