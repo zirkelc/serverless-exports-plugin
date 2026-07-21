@@ -80,9 +80,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Node 24 so that a trusted-publishing capable npm can be installed below.
       - name: Setup and Install
         id: install
         uses: zirkelc/setup-and-install@v1
+        with:
+          node-version: 24
 
       - name: Build
         run: pnpm build
